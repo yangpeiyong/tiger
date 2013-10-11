@@ -1,0 +1,163 @@
+状态 10 conflicts: 1 shift/reduce
+状态 11 conflicts: 1 shift/reduce
+状态 12 conflicts: 1 shift/reduce
+
+
+语法
+
+    0 $accept: S $end
+
+    1 S: E
+
+    2 E: WHILE E DO E
+    3  | ID ASSIGN E
+    4  | E PLUS E
+    5  | ID
+
+
+Terminals, with rules where they appear
+
+$end (0) 0
+error (256)
+WHILE (258) 2
+DO (259) 2
+ID (260) 3 5
+ASSIGN (261) 3
+PLUS (262) 4
+
+
+Nonterminals, with rules where they appear
+
+$accept (8)
+    左： 0
+S (9)
+    左： 1, 右： 0
+E (10)
+    左： 2 3 4 5, 右： 1 2 3 4
+
+
+状态 0
+
+    0 $accept: . S $end
+
+    WHILE  shift, and go to state 1
+    ID     shift, and go to state 2
+
+    S  转到状态3
+    E  转到状态4
+
+
+状态 1
+
+    2 E: WHILE . E DO E
+
+    WHILE  shift, and go to state 1
+    ID     shift, and go to state 2
+
+    E  转到状态5
+
+
+状态 2
+
+    3 E: ID . ASSIGN E
+    5  | ID .
+
+    ASSIGN  shift, and go to state 6
+
+    $default  reduce using rule 5 (E)
+
+
+状态 3
+
+    0 $accept: S . $end
+
+    $end  shift, and go to state 7
+
+
+状态 4
+
+    1 S: E .
+    4 E: E . PLUS E
+
+    PLUS  shift, and go to state 8
+
+    $default  reduce using rule 1 (S)
+
+
+状态 5
+
+    2 E: WHILE E . DO E
+    4  | E . PLUS E
+
+    DO    shift, and go to state 9
+    PLUS  shift, and go to state 8
+
+
+状态 6
+
+    3 E: ID ASSIGN . E
+
+    WHILE  shift, and go to state 1
+    ID     shift, and go to state 2
+
+    E  转到状态10
+
+
+状态 7
+
+    0 $accept: S $end .
+
+    $default  接受
+
+
+状态 8
+
+    4 E: E PLUS . E
+
+    WHILE  shift, and go to state 1
+    ID     shift, and go to state 2
+
+    E  转到状态11
+
+
+状态 9
+
+    2 E: WHILE E DO . E
+
+    WHILE  shift, and go to state 1
+    ID     shift, and go to state 2
+
+    E  转到状态12
+
+
+状态 10
+
+    3 E: ID ASSIGN E .
+    4  | E . PLUS E
+
+    PLUS  shift, and go to state 8
+
+    PLUS      [reduce using rule 3 (E)]
+    $default  reduce using rule 3 (E)
+
+
+状态 11
+
+    4 E: E . PLUS E
+    4  | E PLUS E .
+
+    PLUS  shift, and go to state 8
+
+    PLUS      [reduce using rule 4 (E)]
+    $default  reduce using rule 4 (E)
+
+
+状态 12
+
+    2 E: WHILE E DO E .
+    4  | E . PLUS E
+
+    PLUS  shift, and go to state 8
+
+    PLUS      [reduce using rule 2 (E)]
+    $default  reduce using rule 2 (E)
