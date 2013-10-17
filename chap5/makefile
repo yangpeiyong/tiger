@@ -10,9 +10,6 @@ y.tab.o: y.tab.c
 y.tab.c: tiger.y
 	yacc -dv tiger.y
 
-y.tab.h: y.tab.c
-	echo "y.tab.h was created at the same time as y.tab.c"
-
 errormsg.o: errormsg.c errormsg.h util.h
 	cc -g -c errormsg.c
 

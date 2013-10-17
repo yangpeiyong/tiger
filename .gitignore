@@ -16,3 +16,7 @@
 *.exe
 *.out
 *.app
+
+# temp files
+*.swp
+*.swo

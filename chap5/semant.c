@@ -26,7 +26,7 @@ struct expty transExp(S_table venv, S_table tenv, A_exp e)
       return transVar(venv, tenv, e->u.var);
 
     case A_nilExp:
-      return ExpTy(NULL, Ty_Void());
+      return ExpTy(NULL, Ty_Nil());
 
     case A_intExp:
       return ExpTy(NULL, Ty_Int());
@@ -84,7 +84,7 @@ struct expty transCallExp(S_table venv, S_table tenv, A_exp e)
   Ty_tyList formals = ee->u.fun.formals;
   A_expList args = e->u.call.args;
   for (; formals && args; formals = formals->tail, args = args->tail) {
-    if (formals->head != transExp(venv, tenv, args->head).ty) {
+    if (!Ty_is_compatible(formals->head, transExp(venv, tenv, args->head).ty)) {
       EM_error(e->pos, "arguments type mismatch");
       return ExpTy(NULL, NULL);
     }
@@ -123,7 +123,7 @@ struct expty transOpExp(S_table venv, S_table tenv, A_exp e)
     case A_leOp:
     case A_gtOp:
     case A_geOp:
-      if (left.ty->kind != right.ty->kind) {
+      if (!Ty_is_compatible(left.ty, right.ty)) {
         EM_error(e->pos, "operands type mismatch");
       }
       return ExpTy(NULL, Ty_Int());
@@ -150,13 +150,14 @@ struct expty transRecordExp(S_table venv, S_table tenv, A_exp e)
 
   while (efl && tfl) {
     if (efl->head->name != tfl->head->name) {
-      EM_error(e->pos, "field name error %s",
-          S_name(efl->head->name));
+      EM_error(e->pos, "field name error %s", S_name(efl->head->name));
     }
     if (transExp(venv, tenv, efl->head->exp).ty != tfl->head->ty) {
-      EM_error(e->pos, "field type error %s",
-          S_name(efl->head->name));
+      EM_error(e->pos, "field type error %s", S_name(efl->head->name));
     }
+
+    efl = efl->tail;
+    tfl = tfl->tail;
   }
   return ExpTy(NULL, recordType);
 }
@@ -183,7 +184,7 @@ struct expty transAssignExp(S_table venv, S_table tenv, A_exp e)
 {
   struct expty lv = transVar(venv, tenv, e->u.assign.var);
   struct expty exp = transExp(venv, tenv, e->u.assign.exp);
-  if (lv.ty != exp.ty) {
+  if (!Ty_is_compatible(lv.ty, exp.ty)) {
     EM_error(e->pos, "assignment types mismatch");
   }
 
@@ -206,7 +207,7 @@ struct expty transIfExp(S_table venv, S_table tenv, A_exp e)
 
   if (e->u.iff.elsee) {
     struct expty elsee = transExp(venv, tenv, e->u.iff.elsee);
-    if (then.ty != elsee.ty) {
+    if (!Ty_is_compatible(then.ty, elsee.ty)) {
       EM_error(e->pos, "then and elsee type of if mismatch");
     }
     return ExpTy(NULL, elsee.ty);
@@ -463,7 +464,7 @@ void transVarDec(S_table venv, S_table tenv, A_dec d)
  */
 void transTypeDec(S_table venv, S_table tenv, A_dec d)
 {
-  Ty_ty ty = transTy(tenv, d->u.type.ty);
+  Ty_ty ty = transTy(tenv, d->u.type.name, d->u.type.ty);
   if (ty)
     S_enter(tenv, d->u.type.name, ty);
   else
@@ -472,7 +473,7 @@ void transTypeDec(S_table venv, S_table tenv, A_dec d)
 
 /* translate A_ty in AST to real type representation
  */
-Ty_ty transTy(S_table tenv, A_ty t)
+Ty_ty transTy(S_table tenv, S_symbol ty_name, A_ty t)
 {
   switch(t->kind) {
     case A_nameTy: {
@@ -483,22 +484,41 @@ Ty_ty transTy(S_table tenv, A_ty t)
         return NULL;
     }
     case A_recordTy: {
-      A_fieldList a_record;
-      A_field a_field;
-      Ty_fieldList t_record;
-      Ty_ty ty;
+      A_fieldList a_record = NULL;
+      A_field a_field = NULL;
+      Ty_fieldList t_record = NULL;
+      Ty_fieldList saved_t_record = NULL;
+      Ty_ty ty = NULL;
 
+      /* we only allow record field type to refer itself or already defined
+       * type: type record = { id : record, id : other_defined_type }
+       */
       for (a_record = t->u.record; a_record; a_record = a_record->tail) {
         a_field = a_record->head;
         ty = S_look(tenv, a_field->typ);
-        if (ty)
-          t_record = Ty_FieldList(Ty_Field(a_field->name, ty), t_record);
-        else {
+        if (ty_name == a_field->typ || ty) {
+          if (t_record) {
+            t_record->tail = Ty_FieldList(Ty_Field(a_field->name, ty), NULL);
+            t_record = t_record->tail;
+          } else {
+            t_record = Ty_FieldList(Ty_Field(a_field->name, ty), NULL);
+            saved_t_record = t_record;
+          }
+        } else {
           EM_error(a_field->pos, "undefined type %s", S_name(a_field->typ));
           return NULL;
         }
       }
-      return Ty_Record(t_record);
+      
+      // fill the record's self-recursive reference
+      Ty_ty new_record = Ty_Record(saved_t_record);
+      Ty_fieldList tfl = NULL;
+      for (tfl = t_record; tfl; tfl = tfl->tail) {
+        if (!tfl->head->ty) {
+          tfl->head->ty = new_record;
+        }
+      }
+      return new_record;
     }
     case A_arrayTy: {
       Ty_ty ty = S_look(tenv, t->u.array);

@@ -56,6 +56,7 @@ Ty_ty Ty_Name(Ty_ty ty);
 Ty_tyList Ty_TyList(Ty_ty head, Ty_tyList tail);
 Ty_field Ty_Field(S_symbol name, Ty_ty ty);
 Ty_fieldList Ty_FieldList(Ty_field head, Ty_fieldList tail);
+int Ty_is_compatible(Ty_ty ty1, Ty_ty ty2);
 
 void Ty_print(Ty_ty t);
 void TyList_print(Ty_tyList list);

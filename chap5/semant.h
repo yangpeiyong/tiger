@@ -33,7 +33,7 @@ void transDec(S_table venv, S_table tenv, A_dec d);
 void transFuncDec(S_table venv, S_table tenv, A_dec d);
 void transVarDec(S_table venv, S_table tenv, A_dec d);
 void transTypeDec(S_table venv, S_table tenv, A_dec d);
-Ty_ty transTy(S_table tenv, A_ty t);
+Ty_ty transTy(S_table tenv, S_symbol ty_name, A_ty t);
 Ty_tyList makeFormalTyList(S_table tenv, A_fieldList fieldList);
 
 // check the whole program

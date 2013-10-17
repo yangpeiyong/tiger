@@ -1791,7 +1791,7 @@ yyreduce:
 
 /* Line 1806 of yacc.c  */
 #line 93 "tiger.y"
-    { (yyval.exp) = A_IfExp(EM_tokPos, (yyvsp[(2) - (4)].exp), (yyvsp[(4) - (4)].exp), A_NilExp(0)); }
+    { (yyval.exp) = A_IfExp(EM_tokPos, (yyvsp[(2) - (4)].exp), (yyvsp[(4) - (4)].exp), NULL); }
     break;
 
   case 27:
